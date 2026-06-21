@@ -331,7 +331,7 @@ const state = {
   regForm: { username: "", password: "", community: "" },
   justRegistered: null,
   ownerPwInput: "",
-  reportForm: { phone: "", alias: "", community: "", description: "" },
+  reportForm: { alias: "", community: "", description: "" },
   justReported: null,
 };
 
@@ -426,8 +426,8 @@ async function handleOwnerAuth(e) {
 async function handleSubmitReport(e) {
   e.preventDefault();
   const f = state.reportForm;
-  if (!f.phone || !f.alias || !f.community || !f.description) {
-    flash("Completá teléfono, alias, comunidad y descripción.", "error");
+  if (!f.alias || !f.community || !f.description) {
+    flash("Completá alias, comunidad y descripción.", "error");
     return;
   }
   state.loading = true;
@@ -441,7 +441,7 @@ async function handleSubmitReport(e) {
       shortId: id,
       link: whatsappLink(`Reporte ${id} — enviado por ${state.currentUser.username}. Alias reportado: ${f.alias}. Comunidad: ${f.community}. Te adjunto las pruebas.`),
     };
-    state.reportForm = { phone: "", alias: "", community: "", description: "" };
+    state.reportForm = { alias: "", community: "", description: "" };
     await refreshAll();
   } catch (err) {
     state.loading = false;
@@ -521,7 +521,6 @@ function reportCardHtml(r, opts = {}) {
       </div>
       <div class="report-desc">${esc(r.description)}</div>
       <div class="report-row">
-        <span>Tel: <span class="mono">${esc(r.phone)}</span></span>
         ${r.evidenceLink
           ? `<a href="${esc(r.evidenceLink)}" target="_blank" rel="noreferrer">Ver evidencia →</a>`
           : `<span style="color:var(--amber)">Esperando captura por WhatsApp</span>`}
@@ -778,10 +777,7 @@ function renderDashboard() {
       formArea = `
         <div class="section-title" style="margin-bottom:14px;">Reportar a una persona</div>
         <form id="report-form">
-          <div class="grid-2">
-            ${fieldHtml("TELÉFONO", `<input class="input" id="report-phone" value="${esc(state.reportForm.phone)}" />`)}
-            ${fieldHtml("ALIAS (ficticio)", `<input class="input" id="report-alias" value="${esc(state.reportForm.alias)}" />`)}
-          </div>
+          ${fieldHtml("ALIAS (ficticio)", `<input class="input" id="report-alias" value="${esc(state.reportForm.alias)}" />`)}
           ${fieldHtml("COMUNIDAD A LA QUE PERTENECE", `<input class="input" id="report-community" value="${esc(state.reportForm.community)}" />`)}
           ${fieldHtml("DESCRIPCIÓN DEL ATAQUE / INFRACCIÓN", `<textarea rows="4" class="input" id="report-description">${esc(state.reportForm.description)}</textarea>`)}
           <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;">Después de enviar te vamos a pedir que mandes las capturas de prueba por WhatsApp.</p>
@@ -978,7 +974,6 @@ function bindEvents() {
   const reportForm = document.getElementById("report-form");
   if (reportForm) {
     reportForm.addEventListener("submit", handleSubmitReport);
-    document.getElementById("report-phone").addEventListener("input", (e) => { state.reportForm.phone = e.target.value; });
     document.getElementById("report-alias").addEventListener("input", (e) => { state.reportForm.alias = e.target.value; });
     document.getElementById("report-community").addEventListener("input", (e) => { state.reportForm.community = e.target.value; });
     document.getElementById("report-description").addEventListener("input", (e) => { state.reportForm.description = e.target.value; });
