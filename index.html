@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Centinela</title>
+<title>Solo Administradores</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -135,7 +135,7 @@
   a { color: var(--violet); }
 
   /* GATE screen */
-  .gate-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+  .gate-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 24px; }
   .gate-eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--violet); font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.1em; margin-bottom: 10px; }
   .gate-title { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; margin: 0; text-align: center; }
   .gate-sub { color: var(--muted); font-size: 14px; max-width: 360px; margin: 10px auto 0; text-align: center; }
@@ -144,6 +144,16 @@
   .gate-card-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 16px; margin: 10px 0 4px; }
   .gate-card-desc { color: var(--muted); font-size: 13px; }
   .gate-card-cta { font-size: 13px; margin-top: 12px; display: flex; align-items: center; gap: 4px; }
+
+  .gate-info { width: 100%; max-width: 640px; margin-top: 56px; }
+  .gate-info-block { margin-bottom: 28px; }
+  .gate-info-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .gate-info-text { color: var(--muted); font-size: 13.5px; line-height: 1.6; }
+  .gate-info-text p { margin: 0 0 10px; }
+  .gate-info-text p:last-child { margin-bottom: 0; }
+  .gate-rules-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .gate-rules-list li { display: flex; gap: 10px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .gate-rules-list .rule-num { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--violet); flex-shrink: 0; padding-top: 1px; }
 
   /* Auth */
   .center-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
@@ -264,6 +274,9 @@ const ICONS = {
   info: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
   messageCircle: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>`,
   link2: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
+  users: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  listChecks: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h1"/><path d="m3 12 1 1 2-2"/><path d="m3 18 1 1 2-2"/><path d="M9 6h12"/><path d="M9 12h12"/><path d="M9 18h12"/></svg>`,
+  workflow: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>`,
 };
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -364,7 +377,7 @@ async function handleRegister(e) {
     state.justRegistered = {
       username: f.username,
       community: f.community,
-      link: whatsappLink(`Hola, soy ${f.username} y quiero registrarme como administrador del grupo "${f.community}" en Centinela. Te adjunto la captura que prueba que soy admin.`),
+      link: whatsappLink(`Hola, soy ${f.username} y quiero registrarme como administrador del grupo "${f.community}" en Solo Administradores. Te adjunto la captura que prueba que soy admin.`),
     };
     state.regForm = { username: "", password: "", community: "" };
     await refreshAll();
@@ -597,7 +610,7 @@ function renderGate() {
     <div class="gate-wrap">
       <div>
         <div class="gate-eyebrow">${ICONS.shieldAlert} REGISTRO ENTRE COMUNIDADES</div>
-        <h1 class="gate-title">Centinela</h1>
+        <h1 class="gate-title">Solo Administradores</h1>
         <p class="gate-sub">Los administradores de grupo reportan a quienes rompen las reglas. Vos revisás cada caso antes de que quede visible.</p>
       </div>
       <div class="gate-cards">
@@ -612,6 +625,32 @@ function renderGate() {
           <div class="gate-card-title">Panel del propietario</div>
           <div class="gate-card-desc">Aprobá administradores y reportes.</div>
           <div class="gate-card-cta" style="color:var(--amber)">Continuar ${ICONS.chevronRight}</div>
+        </div>
+      </div>
+
+      <div class="gate-info">
+        <div class="gate-info-block">
+          <div class="gate-info-title"><span style="color:var(--violet)">${ICONS.users}</span> Qué es este grupo</div>
+          <div class="gate-info-text">
+            <p>Este espacio está formado por administradores de grupos de WhatsApp que quieren un lugar sano y seguro para sus comunidades.</p>
+            <p>Acá compartimos la información que recolectamos sobre personas que buscan robar nuestros grupos, hacer daño o perjudicar a sus miembros. Las registramos para no volver a aceptarlas en ningún otro grupo, y armamos un mapa de su red para ver cómo se mueven entre comunidades.</p>
+          </div>
+        </div>
+
+        <div class="gate-info-block">
+          <div class="gate-info-title"><span style="color:var(--amber)">${ICONS.listChecks}</span> Reglas del grupo</div>
+          <ul class="gate-rules-list">
+            <li><span class="rule-num">01</span> Compartir la información recaudada sobre personas que representan un riesgo para nuestros grupos.</li>
+            <li><span class="rule-num">02</span> Cada administrador se hace responsable de revisar y reportar los números marcados dentro de su propio grupo.</li>
+          </ul>
+        </div>
+
+        <div class="gate-info-block">
+          <div class="gate-info-title"><span style="color:var(--teal)">${ICONS.workflow}</span> Cómo funciona el proceso</div>
+          <div class="gate-info-text">
+            <p>Todos los reportes de estas personas se envían a esta página y quedan guardados acá para consulta de todos los administradores.</p>
+            <p>Además, el grupo trabaja en conjunto con cada administrador: una vez identificado un número, cada admin se encarga de asegurarse de que sea reportado dentro de su propia comunidad.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -763,7 +802,7 @@ function renderDashboard() {
     <div class="container-narrow">
       <div class="dash-header">
         <div>
-          <div class="dash-eyebrow">CENTINELA</div>
+          <div class="dash-eyebrow">SOLO ADMINISTRADORES</div>
           <div class="dash-title">Hola, ${esc(u.username)}</div>
         </div>
         <button class="btn btn-ghost" id="logout-btn">${ICONS.logOut} Cerrar sesión</button>
@@ -846,7 +885,7 @@ function renderOwner() {
     <div class="container-wide">
       <div class="dash-header">
         <div>
-          <div class="dash-eyebrow" style="color:var(--amber);">CENTINELA · PROPIETARIO</div>
+          <div class="dash-eyebrow" style="color:var(--amber);">SOLO ADMINISTRADORES · PROPIETARIO</div>
           <div class="dash-title">Panel de control</div>
         </div>
         <button class="btn btn-ghost" id="owner-exit-btn">${ICONS.logOut} Salir</button>
