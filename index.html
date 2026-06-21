@@ -270,20 +270,28 @@ const ICONS = {
    FIRESTORE HELPERS
 ═══════════════════════════════════════════════════════════════════════ */
 async function getDocData(col, id) {
-  try {
-    const snap = await db.collection(col).doc(id).get();
-    return snap.exists ? snap.data() : null;
-  } catch {
-    return null;
-  }
+  const snap = await db.collection(col).doc(id).get();
+  return snap.exists ? snap.data() : null;
 }
 async function getCollectionData(col) {
   try {
     const snap = await db.collection(col).get();
     return snap.docs.map((d) => d.data());
-  } catch {
+  } catch (err) {
+    console.error(`Error leyendo colección "${col}":`, err);
+    flash("No se pudo cargar la información. " + friendlyFirebaseError(err), "error");
     return [];
   }
+}
+function friendlyFirebaseError(err) {
+  const code = err && err.code ? err.code : "";
+  if (code === "permission-denied") {
+    return "Firestore rechazó el acceso (permission-denied). Revisá las reglas de seguridad en Firebase Console → Firestore Database → Reglas.";
+  }
+  if (code === "unavailable") {
+    return "No hay conexión con Firebase. Revisá tu internet.";
+  }
+  return (err && err.message) ? err.message : String(err);
 }
 async function saveDoc(col, id, data) {
   await db.collection(col).doc(id).set(data);
@@ -342,39 +350,53 @@ async function handleRegister(e) {
   }
   state.loading = true;
   render();
-  const existing = await getDocData("admins", f.username);
-  if (existing) {
+  try {
+    const existing = await getDocData("admins", f.username);
+    if (existing) {
+      state.loading = false;
+      flash("Ese nombre de usuario ya existe.", "error");
+      render();
+      return;
+    }
+    const record = { ...f, evidenceLink: "", status: "pending", createdAt: Date.now() };
+    await saveDoc("admins", f.username, record);
     state.loading = false;
-    flash("Ese nombre de usuario ya existe.", "error");
+    state.justRegistered = {
+      username: f.username,
+      community: f.community,
+      link: whatsappLink(`Hola, soy ${f.username} y quiero registrarme como administrador del grupo "${f.community}" en Centinela. Te adjunto la captura que prueba que soy admin.`),
+    };
+    state.regForm = { username: "", password: "", community: "" };
+    await refreshAll();
+  } catch (err) {
+    state.loading = false;
+    console.error("Error al registrar:", err);
+    flash(friendlyFirebaseError(err), "error");
     render();
-    return;
   }
-  const record = { ...f, evidenceLink: "", status: "pending", createdAt: Date.now() };
-  await saveDoc("admins", f.username, record);
-  state.loading = false;
-  state.justRegistered = {
-    username: f.username,
-    community: f.community,
-    link: whatsappLink(`Hola, soy ${f.username} y quiero registrarme como administrador del grupo "${f.community}" en Centinela. Te adjunto la captura que prueba que soy admin.`),
-  };
-  state.regForm = { username: "", password: "", community: "" };
-  await refreshAll();
 }
 
 async function handleLogin(e) {
   e.preventDefault();
   state.loading = true;
   render();
-  const f = state.loginForm;
-  const record = await getDocData("admins", f.username);
-  state.loading = false;
-  if (!record) { flash("Usuario no encontrado.", "error"); render(); return; }
-  if (record.password !== f.password) { flash("Contraseña incorrecta.", "error"); render(); return; }
-  if (record.status === "pending") { flash("Tu registro todavía está pendiente de aprobación.", "error"); render(); return; }
-  if (record.status === "rejected") { flash("Tu solicitud fue rechazada.", "error"); render(); return; }
-  state.currentUser = record;
-  state.screen = "dashboard";
-  await refreshAll();
+  try {
+    const f = state.loginForm;
+    const record = await getDocData("admins", f.username);
+    state.loading = false;
+    if (!record) { flash("Usuario no encontrado.", "error"); render(); return; }
+    if (record.password !== f.password) { flash("Contraseña incorrecta.", "error"); render(); return; }
+    if (record.status === "pending") { flash("Tu registro todavía está pendiente de aprobación.", "error"); render(); return; }
+    if (record.status === "rejected") { flash("Tu solicitud fue rechazada.", "error"); render(); return; }
+    state.currentUser = record;
+    state.screen = "dashboard";
+    await refreshAll();
+  } catch (err) {
+    state.loading = false;
+    console.error("Error al iniciar sesión:", err);
+    flash(friendlyFirebaseError(err), "error");
+    render();
+  }
 }
 
 async function handleOwnerAuth(e) {
@@ -397,16 +419,23 @@ async function handleSubmitReport(e) {
   }
   state.loading = true;
   render();
-  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-  const record = { id, ...f, evidenceLink: "", submittedBy: state.currentUser.username, status: "pending", createdAt: Date.now() };
-  await saveDoc("reports", id, record);
-  state.loading = false;
-  state.justReported = {
-    shortId: id,
-    link: whatsappLink(`Reporte ${id} — enviado por ${state.currentUser.username}. Alias reportado: ${f.alias}. Comunidad: ${f.community}. Te adjunto las pruebas.`),
-  };
-  state.reportForm = { phone: "", alias: "", community: "", description: "" };
-  await refreshAll();
+  try {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const record = { id, ...f, evidenceLink: "", submittedBy: state.currentUser.username, status: "pending", createdAt: Date.now() };
+    await saveDoc("reports", id, record);
+    state.loading = false;
+    state.justReported = {
+      shortId: id,
+      link: whatsappLink(`Reporte ${id} — enviado por ${state.currentUser.username}. Alias reportado: ${f.alias}. Comunidad: ${f.community}. Te adjunto las pruebas.`),
+    };
+    state.reportForm = { phone: "", alias: "", community: "", description: "" };
+    await refreshAll();
+  } catch (err) {
+    state.loading = false;
+    console.error("Error al enviar reporte:", err);
+    flash(friendlyFirebaseError(err), "error");
+    render();
+  }
 }
 
 async function setAdminStatus(username, status) {
