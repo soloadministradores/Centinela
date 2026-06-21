@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Centinela</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0F1420;
+    --surface: #161C2C;
+    --surfaceAlt: #1D2436;
+    --border: #2A3247;
+    --text: #E8EAF0;
+    --muted: #8B93A7;
+    --amber: #E8A23D;
+    --red: #D9554F;
+    --teal: #3FA796;
+    --violet: #7C6FE0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+  ::selection { background: #7C6FE055; }
+  :focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  .hidden { display: none !important; }
+
+  .container-narrow { max-width: 880px; margin: 0 auto; padding: 28px 18px 60px; }
+  .container-wide { max-width: 920px; margin: 0 auto; padding: 28px 18px 60px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .card.clickable { cursor: pointer; }
+  .mb-12 { margin-bottom: 12px; }
+  .mb-24 { margin-bottom: 24px; }
+
+  .empty {
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13.5px;
+  }
+
+  .field { display: block; margin-bottom: 14px; }
+  .field-label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .input {
+    width: 100%;
+    background: var(--surfaceAlt);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+  }
+  textarea.input { resize: vertical; font-family: 'Inter', sans-serif; }
+
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13.5px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: filter 0.15s;
+    border: 1px solid transparent;
+  }
+  .btn:hover:not(:disabled) { filter: brightness(1.12); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--violet); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-approve { background: #3FA7961A; color: var(--teal); border-color: #3FA79655; }
+  .btn-reject { background: #D9554F1A; color: var(--red); border-color: #D9554F55; }
+  .btn-full { width: 100%; justify-content: center; }
+  .btn-whatsapp { background: #25D366; color: #fff; }
+
+  .status-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .status-pending { color: var(--amber); border: 1px solid #E8A23D55; background: #E8A23D14; }
+  .status-approved { color: var(--teal); border: 1px solid #3FA79655; background: #3FA79614; }
+  .status-rejected { color: var(--muted); border: 1px solid #8B93A755; background: #8B93A714; }
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    z-index: 50;
+    max-width: 90%;
+    text-align: center;
+  }
+  .toast-info { background: #3FA79622; border: 1px solid #3FA79666; }
+  .toast-error { background: #D9554F22; border: 1px solid #D9554F66; }
+
+  .spin { animation: spin 0.8s linear infinite; display: inline-block; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  a { color: var(--violet); }
+
+  /* GATE screen */
+  .gate-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+  .gate-eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--violet); font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.1em; margin-bottom: 10px; }
+  .gate-title { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; margin: 0; text-align: center; }
+  .gate-sub { color: var(--muted); font-size: 14px; max-width: 360px; margin: 10px auto 0; text-align: center; }
+  .gate-cards { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 36px; }
+  .gate-card { width: 260px; }
+  .gate-card-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 16px; margin: 10px 0 4px; }
+  .gate-card-desc { color: var(--muted); font-size: 13px; }
+  .gate-card-cta { font-size: 13px; margin-top: 12px; display: flex; align-items: center; gap: 4px; }
+
+  /* Auth */
+  .center-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .back-link { color: var(--muted); font-size: 12.5px; cursor: pointer; margin-bottom: 16px; }
+  .panel-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 16px; }
+  .tabs-pill { display: flex; gap: 6px; margin-bottom: 20px; background: var(--surfaceAlt); padding: 4px; border-radius: 8px; }
+  .tab-pill-btn { flex: 1; padding: 8px 0; border-radius: 6px; border: none; background: transparent; color: var(--muted); font-weight: 600; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .tab-pill-btn.active { background: var(--violet); color: #fff; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Dashboard header / tabs */
+  .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 10px; }
+  .dash-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+  .dash-title { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; }
+  .tabs-underline { display: flex; gap: 8px; margin-bottom: 22px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .tab-underline-btn {
+    background: none; border: none; padding: 10px 4px; margin-right: 18px;
+    color: var(--muted); border-bottom: 2px solid transparent;
+    font-weight: 600; font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; font-family: 'Inter', sans-serif;
+  }
+  .tab-underline-btn.active { color: var(--text); border-bottom-color: var(--violet); }
+  .tab-underline-btn.active.amber { border-bottom-color: var(--amber); }
+
+  .section-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 15px; margin: 26px 0 10px; display: flex; align-items: center; gap: 6px; }
+  .section-title:first-child { margin-top: 0; }
+
+  /* report card */
+  .report-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .report-alias { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 16px; }
+  .report-meta { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .report-desc { font-size: 13.5px; color: var(--text); line-height: 1.5; margin-bottom: 10px; }
+  .report-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+  .report-row .mono { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+  .evidence-editor { display: flex; gap: 6px; margin-top: 10px; }
+  .evidence-editor .input { font-size: 12.5px; padding: 7px 10px; }
+  .report-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+  /* admin request card */
+  .admin-card-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .admin-card-actions { display: flex; gap: 8px; align-items: flex-start; }
+
+  /* Map */
+  .map-wrap {
+    background-color: var(--surfaceAlt);
+    background-image: radial-gradient(circle at 1px 1px, #232b3f 1px, transparent 0);
+    background-size: 18px 18px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .map-legend { display: flex; gap: 18px; padding: 10px 16px; border-top: 1px solid var(--border); font-size: 11.5px; color: var(--muted); font-family: 'JetBrains Mono', monospace; flex-wrap: wrap; }
+
+  .info-line { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 12.5px; margin-bottom: 12px; }
+
+  @media (max-width: 480px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .gate-title { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+<div id="toast-container"></div>
+
+<!-- Firebase (compat build: works with plain <script> tags, no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   FIREBASE SETUP
+═══════════════════════════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDuqCmIZusCDCY96bxAwiX_tM54qCSs5QU",
+  authDomain: "centinela-a1930.firebaseapp.com",
+  projectId: "centinela-a1930",
+  storageBucket: "centinela-a1930.firebasestorage.app",
+  messagingSenderId: "464235139544",
+  appId: "1:464235139544:web:2077694272848007cf22ad",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* ════════════════════════════════════════════════════════════════════════
+   CONFIG
+   Cambiá esta contraseña antes de desplegar. Quien la tenga entra al
+   panel del propietario. No es un sistema de seguridad real porque
+   este archivo es público: cualquiera puede leerla abriendo el código
+   fuente de la página. Ver README.md.
+═══════════════════════════════════════════════════════════════════════ */
+const OWNER_PASSWORD = "centinela2026";
+const OWNER_WHATSAPP = "543834264312";
+
+function whatsappLink(text) {
+  return `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(text)}`;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   ICONS (minimal inline SVG replacements for lucide-react icons used)
+═══════════════════════════════════════════════════════════════════════ */
+const ICONS = {
+  shieldAlert: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>`,
+  userPlus: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>`,
+  userPlusSm: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>`,
+  logIn: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`,
+  logOut: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+  eye: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  fileWarning: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  check: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  x: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  network: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M5 16v-3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><path d="M12 12V8"/></svg>`,
+  lock: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+  chevronRight: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`,
+  loader: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>`,
+  info: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+  messageCircle: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>`,
+  link2: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
+};
+
+/* ════════════════════════════════════════════════════════════════════════
+   FIRESTORE HELPERS
+═══════════════════════════════════════════════════════════════════════ */
+async function getDocData(col, id) {
+  try {
+    const snap = await db.collection(col).doc(id).get();
+    return snap.exists ? snap.data() : null;
+  } catch {
+    return null;
+  }
+}
+async function getCollectionData(col) {
+  try {
+    const snap = await db.collection(col).get();
+    return snap.docs.map((d) => d.data());
+  } catch {
+    return [];
+  }
+}
+async function saveDoc(col, id, data) {
+  await db.collection(col).doc(id).set(data);
+}
+async function patchDoc(col, id, partial) {
+  await db.collection(col).doc(id).update(partial);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════════════════ */
+const state = {
+  screen: "gate", // gate | adminAuth | dashboard | ownerAuth | owner
+  authView: "login",
+  currentUser: null,
+  admins: [],
+  reports: [],
+  loading: false,
+  msg: null,
+  dashTab: "supervision",
+  ownerTab: "solicitudes",
+
+  loginForm: { username: "", password: "" },
+  regForm: { username: "", password: "", community: "" },
+  justRegistered: null,
+  ownerPwInput: "",
+  reportForm: { phone: "", alias: "", community: "", description: "" },
+  justReported: null,
+};
+
+function flash(text, type = "info") {
+  state.msg = { text, type };
+  render();
+  setTimeout(() => {
+    state.msg = null;
+    render();
+  }, 4000);
+}
+
+async function refreshAll() {
+  const [a, r] = await Promise.all([getCollectionData("admins"), getCollectionData("reports")]);
+  state.admins = a;
+  state.reports = r.sort((x, y) => y.createdAt - x.createdAt);
+  render();
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   ACTIONS
+═══════════════════════════════════════════════════════════════════════ */
+async function handleRegister(e) {
+  e.preventDefault();
+  const f = state.regForm;
+  if (!f.username || !f.password || !f.community) {
+    flash("Completá todos los campos.", "error");
+    return;
+  }
+  state.loading = true;
+  render();
+  const existing = await getDocData("admins", f.username);
+  if (existing) {
+    state.loading = false;
+    flash("Ese nombre de usuario ya existe.", "error");
+    render();
+    return;
+  }
+  const record = { ...f, evidenceLink: "", status: "pending", createdAt: Date.now() };
+  await saveDoc("admins", f.username, record);
+  state.loading = false;
+  state.justRegistered = {
+    username: f.username,
+    community: f.community,
+    link: whatsappLink(`Hola, soy ${f.username} y quiero registrarme como administrador del grupo "${f.community}" en Centinela. Te adjunto la captura que prueba que soy admin.`),
+  };
+  state.regForm = { username: "", password: "", community: "" };
+  await refreshAll();
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  state.loading = true;
+  render();
+  const f = state.loginForm;
+  const record = await getDocData("admins", f.username);
+  state.loading = false;
+  if (!record) { flash("Usuario no encontrado.", "error"); render(); return; }
+  if (record.password !== f.password) { flash("Contraseña incorrecta.", "error"); render(); return; }
+  if (record.status === "pending") { flash("Tu registro todavía está pendiente de aprobación.", "error"); render(); return; }
+  if (record.status === "rejected") { flash("Tu solicitud fue rechazada.", "error"); render(); return; }
+  state.currentUser = record;
+  state.screen = "dashboard";
+  await refreshAll();
+}
+
+async function handleOwnerAuth(e) {
+  e.preventDefault();
+  if (state.ownerPwInput === OWNER_PASSWORD) {
+    state.screen = "owner";
+    state.ownerPwInput = "";
+    await refreshAll();
+  } else {
+    flash("Contraseña de propietario incorrecta.", "error");
+  }
+}
+
+async function handleSubmitReport(e) {
+  e.preventDefault();
+  const f = state.reportForm;
+  if (!f.phone || !f.alias || !f.community || !f.description) {
+    flash("Completá teléfono, alias, comunidad y descripción.", "error");
+    return;
+  }
+  state.loading = true;
+  render();
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const record = { id, ...f, evidenceLink: "", submittedBy: state.currentUser.username, status: "pending", createdAt: Date.now() };
+  await saveDoc("reports", id, record);
+  state.loading = false;
+  state.justReported = {
+    shortId: id,
+    link: whatsappLink(`Reporte ${id} — enviado por ${state.currentUser.username}. Alias reportado: ${f.alias}. Comunidad: ${f.community}. Te adjunto las pruebas.`),
+  };
+  state.reportForm = { phone: "", alias: "", community: "", description: "" };
+  await refreshAll();
+}
+
+async function setAdminStatus(username, status) {
+  await patchDoc("admins", username, { status });
+  await refreshAll();
+}
+async function setAdminEvidence(username, link) {
+  await patchDoc("admins", username, { evidenceLink: link });
+  await refreshAll();
+}
+async function setReportEvidence(id, link) {
+  await patchDoc("reports", id, { evidenceLink: link });
+  await refreshAll();
+}
+async function setReportStatus(id, status) {
+  await patchDoc("reports", id, { status });
+  await refreshAll();
+}
+function logout() {
+  state.currentUser = null;
+  state.screen = "gate";
+  state.dashTab = "supervision";
+  render();
+}
+function go(screen) {
+  state.screen = screen;
+  render();
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   SMALL RENDER HELPERS (return HTML strings)
+═══════════════════════════════════════════════════════════════════════ */
+function esc(str) {
+  if (str === undefined || str === null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function statusChip(status) {
+  const map = {
+    pending: { label: "PENDIENTE", cls: "status-pending" },
+    approved: { label: "APROBADO", cls: "status-approved" },
+    rejected: { label: "RECHAZADO", cls: "status-rejected" },
+  };
+  const s = map[status] || map.pending;
+  return `<span class="status-chip ${s.cls}">${s.label}</span>`;
+}
+
+function fieldHtml(label, innerHtml) {
+  return `<label class="field"><span class="field-label">${esc(label)}</span>${innerHtml}</label>`;
+}
+
+function emptyHtml(text) {
+  return `<div class="empty">${esc(text)}</div>`;
+}
+
+function reportCardHtml(r, opts = {}) {
+  const { showActions = false, showEvidenceEditor = false } = opts;
+  return `
+    <div class="card mb-12" data-report-card="${esc(r.id)}">
+      <div class="report-card-top">
+        <div>
+          <div class="report-alias">${esc(r.alias)}</div>
+          <div class="report-meta">${esc(r.community)} · ${esc(new Date(r.createdAt).toLocaleDateString())} · caso ${esc(r.id)}</div>
+        </div>
+        ${statusChip(r.status)}
+      </div>
+      <div class="report-desc">${esc(r.description)}</div>
+      <div class="report-row">
+        <span>Tel: <span class="mono">${esc(r.phone)}</span></span>
+        ${r.evidenceLink
+          ? `<a href="${esc(r.evidenceLink)}" target="_blank" rel="noreferrer">Ver evidencia →</a>`
+          : `<span style="color:var(--amber)">Esperando captura por WhatsApp</span>`}
+        <span>Reportado por <span style="color:var(--text)">${esc(r.submittedBy)}</span></span>
+      </div>
+      ${showEvidenceEditor ? `
+      <div class="evidence-editor">
+        <input class="input" type="text" placeholder="Pegá acá el enlace una vez que subas la prueba (opcional)" value="${esc(r.evidenceLink || "")}" data-evidence-input="${esc(r.id)}" />
+        <button class="btn btn-ghost" style="padding:7px 10px" data-save-report-evidence="${esc(r.id)}">${ICONS.link2} Guardar</button>
+      </div>` : ""}
+      ${showActions ? `
+      <div class="report-actions">
+        <button class="btn btn-approve" data-approve-report="${esc(r.id)}">${ICONS.check} Aprobar</button>
+        <button class="btn btn-reject" data-reject-report="${esc(r.id)}">${ICONS.x} Rechazar</button>
+      </div>` : ""}
+    </div>
+  `;
+}
+
+function toastHtml() {
+  if (!state.msg) return "";
+  const cls = state.msg.type === "error" ? "toast-error" : "toast-info";
+  return `<div class="toast ${cls}">${esc(state.msg.text)}</div>`;
+}
+
+/* ── concept map (SVG) ── */
+function conceptMapHtml(reports, showPending) {
+  const list = reports.filter((r) => (showPending ? r.status !== "rejected" : r.status === "approved"));
+  if (list.length === 0) {
+    return emptyHtml("Todavía no hay reportes aprobados para mostrar en el mapa. Cuando se aprueben, las conexiones aparecen acá.");
+  }
+  const communities = [...new Set(list.map((r) => r.community || "Sin comunidad"))];
+  const W = 800, H = 560, cx = W / 2, cy = H / 2, R1 = Math.min(W, H) * 0.33;
+  const hubs = communities.map((name, i) => {
+    const angle = (2 * Math.PI * i) / communities.length - Math.PI / 2;
+    return { name, x: cx + R1 * Math.cos(angle), y: cy + R1 * Math.sin(angle) };
+  });
+  const nodes = [];
+  hubs.forEach((hub) => {
+    const people = list.filter((r) => (r.community || "Sin comunidad") === hub.name);
+    const R2 = 95;
+    people.forEach((p, j) => {
+      const angle = (2 * Math.PI * j) / Math.max(people.length, 1);
+      nodes.push({ ...p, x: hub.x + R2 * Math.cos(angle), y: hub.y + R2 * Math.sin(angle), hub });
+    });
+  });
+
+  const lines1 = hubs.map((h) => `<line x1="${cx}" y1="${cy}" x2="${h.x}" y2="${h.y}" stroke="#2A3247" stroke-width="1"/>`).join("");
+  const lines2 = nodes.map((n) => `<line x1="${n.hub.x}" y1="${n.hub.y}" x2="${n.x}" y2="${n.y}" stroke="${n.status === "pending" ? "#E8A23D66" : "#D9554F66"}" stroke-width="1.25"/>`).join("");
+  const hubCircles = hubs.map((h) => `
+    <g>
+      <circle cx="${h.x}" cy="${h.y}" r="16" fill="#7C6FE0" stroke="#0F1420" stroke-width="2"/>
+      <text x="${h.x}" y="${h.y - 22}" text-anchor="middle" fill="#E8EAF0" font-family="'Space Grotesk', sans-serif" font-size="12" font-weight="600">${esc(h.name)}</text>
+    </g>
+  `).join("");
+  const nodeCircles = nodes.map((n) => `
+    <g>
+      <circle cx="${n.x}" cy="${n.y}" r="9" fill="${n.status === "pending" ? "#E8A23D" : "#D9554F"}" stroke="#0F1420" stroke-width="1.5"/>
+      <text x="${n.x}" y="${n.y + 20}" text-anchor="middle" fill="#8B93A7" font-family="'JetBrains Mono', monospace" font-size="10">${esc(n.alias)}</text>
+    </g>
+  `).join("");
+
+  return `
+    <div class="map-wrap">
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">
+        ${lines1}
+        ${lines2}
+        <circle cx="${cx}" cy="${cy}" r="8" fill="#E8EAF0" opacity="0.8"/>
+        ${hubCircles}
+        ${nodeCircles}
+      </svg>
+      <div class="map-legend">
+        <span><span style="color:var(--violet)">●</span> comunidad</span>
+        <span><span style="color:var(--red)">●</span> persona reportada (aprobado)</span>
+        ${showPending ? `<span><span style="color:var(--amber)">●</span> pendiente de revisión</span>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   SCREEN RENDERERS
+═══════════════════════════════════════════════════════════════════════ */
+function renderGate() {
+  return `
+    <div class="gate-wrap">
+      <div>
+        <div class="gate-eyebrow">${ICONS.shieldAlert} REGISTRO ENTRE COMUNIDADES</div>
+        <h1 class="gate-title">Centinela</h1>
+        <p class="gate-sub">Los administradores de grupo reportan a quienes rompen las reglas. Vos revisás cada caso antes de que quede visible.</p>
+      </div>
+      <div class="gate-cards">
+        <div class="card clickable gate-card" data-go="adminAuth">
+          <div style="color:var(--violet)">${ICONS.userPlus}</div>
+          <div class="gate-card-title">Soy administrador</div>
+          <div class="gate-card-desc">Iniciá sesión o registrá tu grupo.</div>
+          <div class="gate-card-cta" style="color:var(--violet)">Continuar ${ICONS.chevronRight}</div>
+        </div>
+        <div class="card clickable gate-card" data-go="ownerAuth">
+          <div style="color:var(--amber)">${ICONS.lock}</div>
+          <div class="gate-card-title">Panel del propietario</div>
+          <div class="gate-card-desc">Aprobá administradores y reportes.</div>
+          <div class="gate-card-cta" style="color:var(--amber)">Continuar ${ICONS.chevronRight}</div>
+        </div>
+      </div>
+    </div>
+    ${toastHtml()}
+  `;
+}
+
+function renderOwnerAuth() {
+  return `
+    <div class="center-wrap">
+      <div class="card" style="width:340px;">
+        <div class="back-link" data-go="gate">← Volver</div>
+        <div class="panel-title">Acceso del propietario</div>
+        <form id="owner-auth-form">
+          ${fieldHtml("CONTRASEÑA", `<input type="password" class="input" id="owner-pw-input" value="${esc(state.ownerPwInput)}" autofocus />`)}
+          <button type="submit" class="btn btn-primary btn-full">Entrar</button>
+        </form>
+      </div>
+    </div>
+    ${toastHtml()}
+  `;
+}
+
+function renderAdminAuth() {
+  const f = state.authView;
+  let body = "";
+  if (f === "login") {
+    body = `
+      <form id="login-form">
+        ${fieldHtml("USUARIO", `<input class="input" id="login-username" value="${esc(state.loginForm.username)}" />`)}
+        ${fieldHtml("CONTRASEÑA", `<input type="password" class="input" id="login-password" value="${esc(state.loginForm.password)}" />`)}
+        <button type="submit" class="btn btn-primary btn-full" ${state.loading ? "disabled" : ""}>
+          ${state.loading ? `<span class="spin">${ICONS.loader}</span>` : ICONS.logIn} Iniciar sesión
+        </button>
+      </form>
+    `;
+  } else if (state.justRegistered) {
+    const jr = state.justRegistered;
+    body = `
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;color:var(--teal);margin-bottom:10px;">
+          ${ICONS.check} <span style="font-weight:600;font-size:14px;">Registro enviado</span>
+        </div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:16px;">
+          Quedó pendiente de aprobación. Ahora tocá el botón para enviar por WhatsApp la captura que prueba que sos admin de "${esc(jr.community)}".
+        </p>
+        <a href="${esc(jr.link)}" target="_blank" rel="noreferrer" style="text-decoration:none;">
+          <button type="button" class="btn btn-whatsapp btn-full" style="margin-bottom:10px;width:100%;">${ICONS.messageCircle} Enviar prueba por WhatsApp</button>
+        </a>
+        <button type="button" class="btn btn-ghost btn-full" id="go-login-after-register">Ya la envié, ir a iniciar sesión</button>
+      </div>
+    `;
+  } else {
+    body = `
+      <form id="register-form">
+        ${fieldHtml("USUARIO", `<input class="input" id="reg-username" value="${esc(state.regForm.username)}" />`)}
+        ${fieldHtml("CONTRASEÑA", `<input type="password" class="input" id="reg-password" value="${esc(state.regForm.password)}" />`)}
+        ${fieldHtml("COMUNIDAD / GRUPO QUE ADMINISTRÁS", `<input class="input" id="reg-community" value="${esc(state.regForm.community)}" />`)}
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;">Después de enviar este formulario te vamos a pedir que mandes por WhatsApp la captura que prueba que sos admin.</p>
+        <button type="submit" class="btn btn-primary btn-full" ${state.loading ? "disabled" : ""}>
+          ${state.loading ? `<span class="spin">${ICONS.loader}</span>` : ICONS.userPlusSm} Enviar registro
+        </button>
+      </form>
+    `;
+  }
+
+  return `
+    <div class="center-wrap">
+      <div class="card" style="width:380px;">
+        <div class="back-link" data-go="gate">← Volver</div>
+        <div class="tabs-pill">
+          <button class="tab-pill-btn ${state.authView === "login" ? "active" : ""}" data-authview="login">Iniciar sesión</button>
+          <button class="tab-pill-btn ${state.authView === "register" ? "active" : ""}" data-authview="register">Registrarme</button>
+        </div>
+        ${body}
+      </div>
+    </div>
+    ${toastHtml()}
+  `;
+}
+
+function renderDashboard() {
+  const u = state.currentUser;
+  const approvedReports = state.reports.filter((r) => r.status === "approved");
+  const myReports = state.reports.filter((r) => r.submittedBy === u.username);
+
+  const tabsHtml = `
+    <div class="tabs-underline">
+      <button class="tab-underline-btn ${state.dashTab === "supervision" ? "active" : ""}" data-dashtab="supervision">${ICONS.eye} Supervisión</button>
+      <button class="tab-underline-btn ${state.dashTab === "reportes" ? "active" : ""}" data-dashtab="reportes">${ICONS.fileWarning} Reportes</button>
+    </div>
+  `;
+
+  let content = "";
+  if (state.dashTab === "supervision") {
+    content = `
+      <div style="margin-bottom:18px;">
+        <div class="section-title">${ICONS.network} Mapa de comunidades y personas reportadas</div>
+        ${conceptMapHtml(state.reports, false)}
+      </div>
+      <div class="section-title">Reportes aprobados (${approvedReports.length})</div>
+      ${approvedReports.length === 0
+        ? emptyHtml("Todavía no hay reportes aprobados. Cuando el propietario apruebe alguno, aparece acá.")
+        : approvedReports.map((r) => reportCardHtml(r)).join("")}
+    `;
+  } else {
+    let formArea = "";
+    if (state.justReported) {
+      const jr = state.justReported;
+      formArea = `
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;color:var(--teal);margin-bottom:10px;">
+            ${ICONS.check} <span style="font-weight:600;font-size:14px;">Reporte ${esc(jr.shortId)} enviado</span>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:16px;">
+            Quedó pendiente de aprobación. Ahora tocá el botón para mandar por WhatsApp las capturas de prueba — ya van a llegar con el número de caso.
+          </p>
+          <a href="${esc(jr.link)}" target="_blank" rel="noreferrer" style="text-decoration:none;">
+            <button type="button" class="btn btn-whatsapp btn-full" style="margin-bottom:10px;width:100%;">${ICONS.messageCircle} Enviar pruebas por WhatsApp</button>
+          </a>
+          <button type="button" class="btn btn-ghost btn-full" id="report-another">Hacer otro reporte</button>
+        </div>
+      `;
+    } else {
+      formArea = `
+        <div class="section-title" style="margin-bottom:14px;">Reportar a una persona</div>
+        <form id="report-form">
+          <div class="grid-2">
+            ${fieldHtml("TELÉFONO", `<input class="input" id="report-phone" value="${esc(state.reportForm.phone)}" />`)}
+            ${fieldHtml("ALIAS (ficticio)", `<input class="input" id="report-alias" value="${esc(state.reportForm.alias)}" />`)}
+          </div>
+          ${fieldHtml("COMUNIDAD A LA QUE PERTENECE", `<input class="input" id="report-community" value="${esc(state.reportForm.community)}" />`)}
+          ${fieldHtml("DESCRIPCIÓN DEL ATAQUE / INFRACCIÓN", `<textarea rows="4" class="input" id="report-description">${esc(state.reportForm.description)}</textarea>`)}
+          <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;">Después de enviar te vamos a pedir que mandes las capturas de prueba por WhatsApp.</p>
+          <button type="submit" class="btn btn-primary" ${state.loading ? "disabled" : ""}>
+            ${state.loading ? `<span class="spin">${ICONS.loader}</span>` : ICONS.fileWarning} Enviar reporte
+          </button>
+        </form>
+      `;
+    }
+    content = `
+      <div class="card mb-24">${formArea}</div>
+      <div class="section-title">Mis reportes enviados (${myReports.length})</div>
+      ${myReports.length === 0 ? emptyHtml("Todavía no enviaste ningún reporte.") : myReports.map((r) => reportCardHtml(r)).join("")}
+    `;
+  }
+
+  return `
+    <div class="container-narrow">
+      <div class="dash-header">
+        <div>
+          <div class="dash-eyebrow">CENTINELA</div>
+          <div class="dash-title">Hola, ${esc(u.username)}</div>
+        </div>
+        <button class="btn btn-ghost" id="logout-btn">${ICONS.logOut} Cerrar sesión</button>
+      </div>
+      ${tabsHtml}
+      ${content}
+    </div>
+    ${toastHtml()}
+  `;
+}
+
+function renderOwner() {
+  const pendingAdmins = state.admins.filter((a) => a.status === "pending");
+  const decidedAdmins = state.admins.filter((a) => a.status !== "pending");
+  const pendingReports = state.reports.filter((r) => r.status === "pending");
+  const decidedReports = state.reports.filter((r) => r.status !== "pending");
+
+  const tabsHtml = `
+    <div class="tabs-underline">
+      <button class="tab-underline-btn amber ${state.ownerTab === "solicitudes" ? "active amber" : ""}" data-ownertab="solicitudes">${ICONS.userPlusSm} Solicitudes (${pendingAdmins.length})</button>
+      <button class="tab-underline-btn amber ${state.ownerTab === "reportes" ? "active amber" : ""}" data-ownertab="reportes">${ICONS.fileWarning} Reportes (${pendingReports.length})</button>
+      <button class="tab-underline-btn amber ${state.ownerTab === "mapa" ? "active amber" : ""}" data-ownertab="mapa">${ICONS.network} Mapa completo</button>
+    </div>
+  `;
+
+  let content = "";
+  if (state.ownerTab === "solicitudes") {
+    content = `
+      <div class="section-title">Pendientes de revisión</div>
+      ${pendingAdmins.length === 0 ? emptyHtml("No hay solicitudes de administrador pendientes.") : pendingAdmins.map((a) => `
+        <div class="card mb-12">
+          <div class="admin-card-row">
+            <div style="flex:1;min-width:220px;">
+              <div style="font-family:'Space Grotesk', sans-serif; font-weight:600;">${esc(a.username)}</div>
+              <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">Grupo: ${esc(a.community)}</div>
+              ${a.evidenceLink
+                ? `<a href="${esc(a.evidenceLink)}" target="_blank" rel="noreferrer" style="font-size:12.5px;">Ver evidencia guardada →</a>`
+                : `<div style="font-size:12px;color:var(--amber);">Esperando captura por WhatsApp</div>`}
+              <div class="evidence-editor">
+                <input class="input" type="text" placeholder="Pegá acá el enlace una vez que subas la prueba (opcional)" value="${esc(a.evidenceLink || "")}" data-admin-evidence-input="${esc(a.username)}" />
+                <button class="btn btn-ghost" style="padding:7px 10px" data-save-admin-evidence="${esc(a.username)}">${ICONS.link2} Guardar</button>
+              </div>
+            </div>
+            <div class="admin-card-actions">
+              <button class="btn btn-approve" data-approve-admin="${esc(a.username)}">${ICONS.check} Aprobar</button>
+              <button class="btn btn-reject" data-reject-admin="${esc(a.username)}">${ICONS.x} Rechazar</button>
+            </div>
+          </div>
+        </div>
+      `).join("")}
+      ${decidedAdmins.length > 0 ? `
+        <div class="section-title">Historial</div>
+        ${decidedAdmins.map((a) => `
+          <div class="card mb-12" style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;">
+              <div><span style="font-weight:600;">${esc(a.username)}</span><span style="color:var(--muted);font-size:12.5px;margin-left:8px;">${esc(a.community)}</span></div>
+              ${statusChip(a.status)}
+            </div>
+          </div>
+        `).join("")}
+      ` : ""}
+    `;
+  } else if (state.ownerTab === "reportes") {
+    content = `
+      <div class="section-title">Pendientes de revisión</div>
+      ${pendingReports.length === 0 ? emptyHtml("No hay reportes pendientes.") : pendingReports.map((r) => reportCardHtml(r, { showActions: true, showEvidenceEditor: true })).join("")}
+      ${decidedReports.length > 0 ? `
+        <div class="section-title">Historial (${decidedReports.length})</div>
+        ${decidedReports.map((r) => reportCardHtml(r)).join("")}
+      ` : ""}
+    `;
+  } else if (state.ownerTab === "mapa") {
+    content = `
+      <div class="info-line">${ICONS.info} Incluye reportes pendientes (ámbar) y aprobados (rojo). Los rechazados no se muestran.</div>
+      ${conceptMapHtml(state.reports, true)}
+    `;
+  }
+
+  return `
+    <div class="container-wide">
+      <div class="dash-header">
+        <div>
+          <div class="dash-eyebrow" style="color:var(--amber);">CENTINELA · PROPIETARIO</div>
+          <div class="dash-title">Panel de control</div>
+        </div>
+        <button class="btn btn-ghost" id="owner-exit-btn">${ICONS.logOut} Salir</button>
+      </div>
+      ${tabsHtml}
+      ${content}
+    </div>
+    ${toastHtml()}
+  `;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   MAIN RENDER + EVENT BINDING
+═══════════════════════════════════════════════════════════════════════ */
+function render() {
+  const root = document.getElementById("root");
+  let html = "";
+  if (state.screen === "gate") html = renderGate();
+  else if (state.screen === "ownerAuth") html = renderOwnerAuth();
+  else if (state.screen === "adminAuth") html = renderAdminAuth();
+  else if (state.screen === "dashboard" && state.currentUser) html = renderDashboard();
+  else if (state.screen === "owner") html = renderOwner();
+  else html = `<div style="padding:40px;text-align:center;color:var(--muted);">Cargando…</div>`;
+
+  root.innerHTML = html;
+  bindEvents();
+}
+
+function bindEvents() {
+  // navigation
+  document.querySelectorAll("[data-go]").forEach((el) => {
+    el.addEventListener("click", () => go(el.getAttribute("data-go")));
+  });
+
+  // auth view tabs
+  document.querySelectorAll("[data-authview]").forEach((el) => {
+    el.addEventListener("click", () => {
+      state.authView = el.getAttribute("data-authview");
+      state.justRegistered = null;
+      render();
+    });
+  });
+
+  // owner auth form
+  const ownerForm = document.getElementById("owner-auth-form");
+  if (ownerForm) {
+    ownerForm.addEventListener("submit", handleOwnerAuth);
+    document.getElementById("owner-pw-input").addEventListener("input", (e) => {
+      state.ownerPwInput = e.target.value;
+    });
+  }
+
+  // login form
+  const loginForm = document.getElementById("login-form");
+  if (loginForm) {
+    loginForm.addEventListener("submit", handleLogin);
+    document.getElementById("login-username").addEventListener("input", (e) => { state.loginForm.username = e.target.value; });
+    document.getElementById("login-password").addEventListener("input", (e) => { state.loginForm.password = e.target.value; });
+  }
+
+  // register form
+  const regForm = document.getElementById("register-form");
+  if (regForm) {
+    regForm.addEventListener("submit", handleRegister);
+    document.getElementById("reg-username").addEventListener("input", (e) => { state.regForm.username = e.target.value; });
+    document.getElementById("reg-password").addEventListener("input", (e) => { state.regForm.password = e.target.value; });
+    document.getElementById("reg-community").addEventListener("input", (e) => { state.regForm.community = e.target.value; });
+  }
+
+  const goLoginAfterRegister = document.getElementById("go-login-after-register");
+  if (goLoginAfterRegister) {
+    goLoginAfterRegister.addEventListener("click", () => {
+      state.justRegistered = null;
+      state.authView = "login";
+      render();
+    });
+  }
+
+  // dashboard
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) logoutBtn.addEventListener("click", logout);
+
+  document.querySelectorAll("[data-dashtab]").forEach((el) => {
+    el.addEventListener("click", () => {
+      state.dashTab = el.getAttribute("data-dashtab");
+      render();
+    });
+  });
+
+  const reportForm = document.getElementById("report-form");
+  if (reportForm) {
+    reportForm.addEventListener("submit", handleSubmitReport);
+    document.getElementById("report-phone").addEventListener("input", (e) => { state.reportForm.phone = e.target.value; });
+    document.getElementById("report-alias").addEventListener("input", (e) => { state.reportForm.alias = e.target.value; });
+    document.getElementById("report-community").addEventListener("input", (e) => { state.reportForm.community = e.target.value; });
+    document.getElementById("report-description").addEventListener("input", (e) => { state.reportForm.description = e.target.value; });
+  }
+
+  const reportAnother = document.getElementById("report-another");
+  if (reportAnother) {
+    reportAnother.addEventListener("click", () => {
+      state.justReported = null;
+      render();
+    });
+  }
+
+  document.querySelectorAll("[data-save-report-evidence]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const id = el.getAttribute("data-save-report-evidence");
+      const input = document.querySelector(`[data-evidence-input="${CSS.escape(id)}"]`);
+      setReportEvidence(id, input.value);
+    });
+  });
+
+  // owner panel
+  const ownerExitBtn = document.getElementById("owner-exit-btn");
+  if (ownerExitBtn) ownerExitBtn.addEventListener("click", () => go("gate"));
+
+  document.querySelectorAll("[data-ownertab]").forEach((el) => {
+    el.addEventListener("click", () => {
+      state.ownerTab = el.getAttribute("data-ownertab");
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-approve-admin]").forEach((el) => {
+    el.addEventListener("click", () => setAdminStatus(el.getAttribute("data-approve-admin"), "approved"));
+  });
+  document.querySelectorAll("[data-reject-admin]").forEach((el) => {
+    el.addEventListener("click", () => setAdminStatus(el.getAttribute("data-reject-admin"), "rejected"));
+  });
+  document.querySelectorAll("[data-save-admin-evidence]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const username = el.getAttribute("data-save-admin-evidence");
+      const input = document.querySelector(`[data-admin-evidence-input="${CSS.escape(username)}"]`);
+      setAdminEvidence(username, input.value);
+    });
+  });
+  document.querySelectorAll("[data-approve-report]").forEach((el) => {
+    el.addEventListener("click", () => setReportStatus(el.getAttribute("data-approve-report"), "approved"));
+  });
+  document.querySelectorAll("[data-reject-report]").forEach((el) => {
+    el.addEventListener("click", () => setReportStatus(el.getAttribute("data-reject-report"), "rejected"));
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════════════ */
+render();
+refreshAll();
+</script>
+</body>
+</html>
