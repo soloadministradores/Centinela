@@ -1143,6 +1143,14 @@
           showPage('page-panel');
           setupPanel();
         }
+      } else {
+        // Usuario existe en Auth pero no tiene documento en Firestore
+        // Se cierra sesión automáticamente para evitar pantalla negra
+        currentUser = null;
+        currentUserData = null;
+        await signOut(auth);
+        showPage('page-landing');
+        showToast('Cuenta no encontrada. Por favor regístrate nuevamente.', 'error');
       }
     } else {
       currentUser = null;
