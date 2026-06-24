@@ -1582,43 +1582,60 @@
     if (!desc)   { showErr('err-rep-desc', 'Describe el incidente'); ok = false; }
     if (!ok) return;
     setBtnLoading('btn-submit-report', true);
+    // Seguridad: desbloquear botón tras 30s sin importar qué
+    const _safetyTimer = setTimeout(() => {
+      setBtnLoading('btn-submit-report', false);
+      showToast('La operación tardó demasiado. Intenta de nuevo.', 'error');
+    }, 30000);
     try {
-      // Upload images — cada archivo se intenta de forma independiente
-      const urls = [];
-      for (const file of selectedFiles) {
-        try {
-          const storRef = ref(storage, `imagenes_reportes/${currentUser.uid}_${Date.now()}_${file.name}`);
-          await uploadBytes(storRef, file);
-          const url = await getDownloadURL(storRef);
-          urls.push(url);
-        } catch(uploadErr) {
-          console.warn('Error al subir imagen, se omite:', uploadErr.message);
-          showToast(`No se pudo subir "${file.name}" — se omitirá`, 'warning');
-        }
-      }
+      // Guardar reporte en Firestore sin imágenes (se envían por WhatsApp)
       const docRef = await addDoc(collection(db, "reportes"), {
         creador: currentUserData.usuario,
         uid: currentUser.uid,
         numero, categoria: cat, descripcion: desc,
-        imagenes: urls,
+        imagenes: [],
         estado: "revision",
         votos: 0,
         fecha: serverTimestamp()
       });
-      // Update with id
       await updateDoc(doc(db, "reportes", docRef.id), { id: docRef.id });
-      showToast('Reporte enviado correctamente', 'success');
+
+      // Armar mensaje WhatsApp con los datos del reporte
+      const cantFotos = selectedFiles.length;
+      const fechaHoy = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+      const waMsg = [
+        `🛡 *Nuevo Reporte - Solo Administradores*`,
+        ``,
+        `📞 *Número reportado:* ${numero}`,
+        `📋 *Categoría:* ${cat}`,
+        `📝 *Descripción:* ${desc}`,
+        `👤 *Reportado por:* @${currentUserData.usuario}`,
+        `📅 *Fecha:* ${fechaHoy}`,
+        `🖼 *Pruebas adjuntas:* ${cantFotos > 0 ? cantFotos + ' imagen(es) a continuación' : 'Sin imágenes'}`,
+        ``,
+        `🆔 ID: ${docRef.id}`
+      ].join('\n');
+
+      const waUrl = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(waMsg)}`;
+
+      // Limpiar formulario
       document.getElementById('rep-numero').value = '';
       document.getElementById('rep-categoria').value = '';
       document.getElementById('rep-descripcion').value = '';
       selectedFiles.length = 0;
       document.getElementById('files-preview').innerHTML = '';
+
+      showToast('Reporte guardado. Abriendo WhatsApp…', 'success');
       switchSection(null, 'sec-reports');
+
+      // Abrir WhatsApp con el mensaje
+      setTimeout(() => window.open(waUrl, '_blank'), 800);
     } catch(e) {
       console.error('Error al crear reporte:', e);
       showToast('Error al enviar reporte: ' + e.message, 'error');
     } finally {
-      // Siempre desbloquear el boton sin importar si hubo error
+      clearTimeout(_safetyTimer);
+      // Siempre desbloquear el botón sin importar si hubo error
       setBtnLoading('btn-submit-report', false);
     }
   };
