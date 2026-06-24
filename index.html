@@ -420,20 +420,7 @@
     .detail-evidence { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 12px; }
     .evidence-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); cursor: pointer; transition: opacity 0.2s; }
     .evidence-img:hover { opacity: 0.8; }
-    .vote-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; }
-    .vote-options { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
-    .vote-btn {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--bg-raised); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 12px 16px;
-      cursor: pointer; font-size: 14px; color: var(--text-2);
-      transition: all 0.2s; text-align: left;
-    }
-    .vote-btn:hover { border-color: var(--border-lit); color: var(--text-1); }
-    .vote-btn.selected { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
-    .vote-btn.verified.selected { border-color: var(--green); color: var(--green); background: rgba(34,197,94,0.1); }
-    .progress-bar { height: 6px; background: var(--bg-raised); border-radius: 99px; overflow: hidden; margin-top: 12px; }
-    .progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s; }
+    
     .comments-list { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
     .comment-item { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
     .comment-author { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
@@ -884,7 +871,7 @@
             <div class="stat-card red">
               <div class="stat-label">En revisión</div>
               <div class="stat-value" id="stat-pending">—</div>
-              <div class="stat-sub">Esperando votos</div>
+              <div class="stat-sub">En revisión</div>
             </div>
             <div class="stat-card green">
               <div class="stat-label">Verificados</div>
@@ -1079,8 +1066,6 @@
   const ADMIN_USERNAME = "INDRHACK";
 
   // Votos mínimos para verificar reporte
-  const MIN_VOTES_VERIFY = 3;
-
   // ─── INIT ─────────────────────────────────────────
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -1383,7 +1368,7 @@
         <div class="report-meta">
           ${badgeHTML(r.estado)}
           <span>· ${formatDate(r.fecha)}</span>
-          <span>· ${r.votos || 0} votos</span>
+
         </div>
       </div>
     `).join('');
@@ -1395,13 +1380,6 @@
     document.getElementById('topbar-title').textContent = 'Detalle del reporte';
     const report = allReports.find(r => r.id === reportId);
     if (!report) return;
-
-    // Check if user already voted
-    let userVote = null;
-    try {
-      const voteSnap = await getDoc(doc(db, "votos", `${currentUser.uid}_${reportId}`));
-      if (voteSnap.exists()) userVote = voteSnap.data().tipo;
-    } catch {}
 
     // Load comments
     let comments = [];
@@ -1419,12 +1397,6 @@
       ? comments.map(c => `<div class="comment-item"><div class="comment-author">@${c.autor}</div><div class="comment-text">${c.texto}</div><div class="comment-date">${formatDate(c.fecha)}</div></div>`).join('')
       : '<p style="color:var(--text-3);font-size:13px;">Sin comentarios aún</p>';
 
-    const voteVerif  = userVote === 'verificado'  ? 'selected verified' : '';
-    const voteInsuf  = userVote === 'insuficiente' ? 'selected' : '';
-    const voteDisabled = userVote ? 'style="opacity:0.6;pointer-events:none;"' : '';
-
-    const progress = Math.min(100, ((report.votos || 0) / MIN_VOTES_VERIFY) * 100);
-
     document.getElementById('report-detail-content').innerHTML = `
       <div class="detail-header">
         <h2>📞 ${report.numero}</h2>
@@ -1435,13 +1407,12 @@
         </div>
       </div>
 
-      <div class="detail-body">
-        <div>
-          <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card">
             <div class="section-label">Descripción</div>
             <p style="font-size:14px;color:var(--text-2);line-height:1.7;">${report.descripcion}</p>
           </div>
-          <div class="card" style="margin-bottom:16px;">
+          <div class="card">
             <div class="section-label">Evidencia</div>
             <div class="detail-evidence">${evidenceHTML}</div>
           </div>
@@ -1453,29 +1424,8 @@
               <button class="btn btn-primary btn-sm" onclick="submitComment('${reportId}')">Enviar</button>
             </div>
           </div>
-        </div>
-
-        <div>
-          <div class="vote-section">
-            <div class="section-label">Emitir opinión</div>
-            <p style="font-size:13px;color:var(--text-2);">¿Qué opinas sobre la evidencia presentada?</p>
-            <div class="vote-options" ${voteDisabled}>
-              <div class="vote-btn verified ${voteVerif}" onclick="submitVote('${reportId}', 'verificado')">
-                ✅ <span>Verificado — Evidencia suficiente</span>
-              </div>
-              <div class="vote-btn ${voteInsuf}" onclick="submitVote('${reportId}', 'insuficiente')">
-                ⚠️ <span>No suficiente evidencia</span>
-              </div>
-            </div>
-            ${userVote ? `<p style="font-size:12px;color:var(--text-3);margin-top:10px;">Ya emitiste tu opinión.</p>` : ''}
-            <div class="divider"></div>
-            <div style="font-size:13px;color:var(--text-2);margin-bottom:8px;">Revisiones: <strong style="color:var(--text-1);">${report.votos || 0} / ${MIN_VOTES_VERIFY}</strong></div>
-            <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
-            ${report.estado === 'verificado' ? `<div style="margin-top:14px;padding:12px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-sm);font-size:13px;color:var(--green);">✅ Reporte revisado y verificado por la comunidad de administradores.</div>` : ''}
-          </div>
-
           ${isAdmin ? `
-          <div class="card" style="margin-top:16px;">
+          <div class="card">
             <div class="section-label">Acciones admin</div>
             <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
               <button class="btn btn-secondary btn-sm" onclick="adminSetReportStatus('${reportId}', 'verificado')">✅ Marcar verificado</button>
@@ -1484,37 +1434,12 @@
             </div>
           </div>` : ''}
         </div>
-      </div>
     `;
   };
 
   window.backToReports = function() {
     switchSection(null, 'sec-reports');
     document.getElementById('topbar-title').textContent = 'Reportes';
-  };
-
-  // ─── VOTE ─────────────────────────────────────────
-  window.submitVote = async function(reportId, tipo) {
-    const voteId = `${currentUser.uid}_${reportId}`;
-    try {
-      await setDoc(doc(db, "votos", voteId), {
-        uid: currentUser.uid,
-        usuario: currentUserData.usuario,
-        reporteId: reportId,
-        tipo,
-        fecha: serverTimestamp()
-      });
-      // Update report votes count
-      const rep = allReports.find(r => r.id === reportId);
-      const newVotes = (rep?.votos || 0) + 1;
-      let newEstado = rep?.estado || 'revision';
-      if (newVotes >= MIN_VOTES_VERIFY && tipo === 'verificado') newEstado = 'verificado';
-      await updateDoc(doc(db, "reportes", reportId), { votos: newVotes, estado: newEstado });
-      showToast('Opinión registrada', 'success');
-      openReportDetail(reportId);
-    } catch(e) {
-      showToast('Error al votar: ' + e.message, 'error');
-    }
   };
 
   // ─── COMMENT ──────────────────────────────────────
@@ -1595,7 +1520,7 @@
         numero, categoria: cat, descripcion: desc,
         imagenes: [],
         estado: "revision",
-        votos: 0,
+
         fecha: serverTimestamp()
       });
       await updateDoc(doc(db, "reportes", docRef.id), { id: docRef.id });
@@ -1751,7 +1676,7 @@
                 <td>${r.numero}</td>
                 <td>${r.categoria}</td>
                 <td>${badgeHTML(r.estado)}</td>
-                <td>${r.votos || 0}</td>
+                
                 <td style="display:flex;gap:6px;">
                   <button class="btn btn-secondary btn-sm" onclick="adminSetReportStatus('${r.id}','verificado')">✅</button>
                   <button class="btn btn-danger btn-sm" onclick="adminDeleteReport('${r.id}')">🗑</button>
