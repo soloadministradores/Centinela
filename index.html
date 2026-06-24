@@ -1115,6 +1115,23 @@
       if (snap.exists()) {
         currentUserData = snap.data();
         window._currentUserDataObj = currentUserData;
+
+        // Auto-fix: if superadmin but not approved yet, fix it
+        if ((currentUserData.esAdmin || currentUserData.usuario === ADMIN_USERNAME) && !currentUserData.aprobado) {
+          await updateDoc(doc(db, "usuarios", user.uid), { aprobado: true, esAdmin: true });
+          currentUserData.aprobado = true;
+          currentUserData.esAdmin = true;
+          // Also create solicitud if missing
+          const solCheck = await getDoc(doc(db, "solicitudes", user.uid));
+          if (!solCheck.exists()) {
+            await setDoc(doc(db, "solicitudes", user.uid), {
+              uid: user.uid, usuario: currentUserData.usuario,
+              grupo: 'Panel de Administración', enlace: '',
+              clausulas: true, estado: 'aprobado', fecha: serverTimestamp()
+            });
+          }
+        }
+
         const solSnap = await getDoc(doc(db, "solicitudes", user.uid));
         const hasSolicitud = solSnap.exists();
         if (!hasSolicitud) {
@@ -1162,15 +1179,30 @@
     const email = `${username.toLowerCase().replace(/\s/g,'')}@soloadmins.app`;
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      const esAdmin = username === ADMIN_USERNAME;
       await setDoc(doc(db, "usuarios", cred.user.uid), {
         uid: cred.user.uid,
         usuario: username,
         email,
         creado: serverTimestamp(),
-        aprobado: false,
-        esAdmin: username === ADMIN_USERNAME
+        aprobado: esAdmin,
+        esAdmin
       });
-      showToast('¡Cuenta creada! Completa tu solicitud.', 'success');
+      if (esAdmin) {
+        // Superadmin: create auto-approved solicitud so panel opens directly
+        await setDoc(doc(db, "solicitudes", cred.user.uid), {
+          uid: cred.user.uid,
+          usuario: username,
+          grupo: 'Panel de Administración',
+          enlace: '',
+          clausulas: true,
+          estado: 'aprobado',
+          fecha: serverTimestamp()
+        });
+        showToast('¡Bienvenido, Super Admin!', 'success');
+      } else {
+        showToast('¡Cuenta creada! Completa tu solicitud.', 'success');
+      }
     } catch(e) {
       showToast('Error al crear cuenta: ' + e.message, 'error');
     }
