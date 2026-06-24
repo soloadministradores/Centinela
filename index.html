@@ -1576,19 +1576,25 @@
     const cat    = document.getElementById('rep-categoria').value;
     const desc   = document.getElementById('rep-descripcion').value.trim();
     let ok = true;
+    clearErrors();
     if (!numero) { showErr('err-rep-numero', 'Requerido'); ok = false; }
     if (!cat)    { showErr('err-rep-categoria', 'Selecciona una categoría'); ok = false; }
     if (!desc)   { showErr('err-rep-desc', 'Describe el incidente'); ok = false; }
     if (!ok) return;
     setBtnLoading('btn-submit-report', true);
     try {
-      // Upload images
+      // Upload images — cada archivo se intenta de forma independiente
       const urls = [];
       for (const file of selectedFiles) {
-        const storRef = ref(storage, `imagenes_reportes/${currentUser.uid}_${Date.now()}_${file.name}`);
-        await uploadBytes(storRef, file);
-        const url = await getDownloadURL(storRef);
-        urls.push(url);
+        try {
+          const storRef = ref(storage, `imagenes_reportes/${currentUser.uid}_${Date.now()}_${file.name}`);
+          await uploadBytes(storRef, file);
+          const url = await getDownloadURL(storRef);
+          urls.push(url);
+        } catch(uploadErr) {
+          console.warn('Error al subir imagen, se omite:', uploadErr.message);
+          showToast(`No se pudo subir "${file.name}" — se omitirá`, 'warning');
+        }
       }
       const docRef = await addDoc(collection(db, "reportes"), {
         creador: currentUserData.usuario,
@@ -1609,9 +1615,12 @@
       document.getElementById('files-preview').innerHTML = '';
       switchSection(null, 'sec-reports');
     } catch(e) {
+      console.error('Error al crear reporte:', e);
       showToast('Error al enviar reporte: ' + e.message, 'error');
+    } finally {
+      // Siempre desbloquear el boton sin importar si hubo error
+      setBtnLoading('btn-submit-report', false);
     }
-    setBtnLoading('btn-submit-report', false);
   };
 
   // ─── ADMINS LIST ──────────────────────────────────
